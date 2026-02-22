@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>shiftly · professional work tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== SCREEN STYLES (Mobile App) ========== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f4f7fb;
+            padding: 12px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        body.dark {
+            background: #12121a;
+            color: #e6e6f0;
+        }
+
+        .tracker-card {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+            padding: 20px 16px 28px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        body.dark .tracker-card {
+            background: rgba(30, 30, 40, 0.9);
+            border-color: #2f2f42;
+        }
+
+        .top-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .title-section { display: flex; align-items: center; gap: 8px; }
+        .title-section h1 { 
+            font-size: 1.8rem; 
+            font-weight: 600; 
+            letter-spacing: -0.5px; 
+            background: linear-gradient(145deg, #1f2b3a, #2d3f5e); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        body.dark .title-section h1 { 
+            background: linear-gradient(145deg, #c0c8da, #a5b9d9); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        .dark-toggle { 
+            background: white; 
+            border: none; 
+            width: 44px; 
+            height: 44px; 
+            border-radius: 30px; 
+            font-size: 1.4rem; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02); 
+            color: #2e405b; 
+        }
+        body.dark .dark-toggle { 
+            background: #2a2a3c; 
+            color: #ffdb9e; 
+        }
+        .employee-controls { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            width: 100%; 
+        }
+        .input-icon { 
+            background: white; 
+            border-radius: 40px; 
+            padding: 6px 16px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
+            border: 1px solid #eef2f7; 
+            flex: 1 1 auto; 
+        }
+        body.dark .input-icon { 
+            background: #262638; 
+            border-color: #3d3d55; 
+        }
+        .input-icon i { 
+            color: #6f8fbc; 
+            width: 20px; 
+        }
+        .input-icon input, .input-icon select { 
+            border: none; 
+            background: transparent; 
+            font-size: 1rem; 
+            padding: 8px 0; 
+            outline: none; 
+            color: inherit; 
+            width: 100%; 
+        }
+
+        .summary-row { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+        }
+        .stat-card { 
+            background: white; 
+            border-radius: 28px; 
+            padding: 16px; 
+            flex: 1 1 120px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.02); 
+            border: 1px solid rgba(255,255,255,0.8); 
+        }
+        body.dark .stat-card { 
+            background: #262638; 
+            border-color: #35354a; 
+        }
+        .stat-icon { 
+            background: #eef4fe; 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 26px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.5rem; 
+            color: #2f5c9a; 
+        }
+        body.dark .stat-icon { 
+            background: #373753; 
+            color: #a7c2eb; 
+        }
+        .stat-content h3 { 
+            font-size: 0.85rem; 
+            font-weight: 400; 
+            opacity: 0.7; 
+            margin-bottom: 4px; 
+        }
+        .stat-content .value { 
+            font-size: 1.8rem; 
+            font-weight: 600; 
+            line-height: 1; 
+        }
+
+        .chart-container { 
+            background: rgba(255,255,255,0.6); 
+            backdrop-filter: blur(4px); 
+            border-radius: 28px; 
+            padding: 16px 8px; 
+            margin-bottom: 24px; 
+            height: 200px; 
+        }
+        body.dark .chart-container { 
+            background: rgba(30,30,47,0.6); 
+        }
+
+        .days-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            padding-right: 4px; 
+        }
+
+        .day-card {
+            background: white;
+            border-radius: 28px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.8);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        body.dark .day-card { 
+            background: #262638; 
+            border-color: #35354a; 
+        }
+
+        .day-checkbox { 
+            width: 30px; 
+            height: 30px; 
+            accent-color: #2f5c9a; 
+            flex-shrink: 0; 
+        }
+        .copy-icon { 
+            font-size: 1.4rem; 
+            color: #2f5c9a; 
+            cursor: pointer; 
+            margin-left: auto; 
+            padding: 8px; 
+        }
+        body.dark .copy-icon { 
+            color: #a7c2eb; 
+        }
+        .day-header { 
+            width: 70px; 
+            font-weight: 500; 
+            color: #4a5f7c; 
+        }
+        body.dark .day-header { 
+            color: #a7b2ca; 
+        }
+        .day-fields { 
+            flex: 1; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            align-items: center; 
+        }
+
+        .time-field { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            background: #f4f7fc; 
+            border-radius: 40px; 
+            padding: 4px 12px; 
+            border: 1px solid #cdddec; 
+        }
+        body.dark .time-field { 
+            background: #2b2b41; 
+            border-color: #49496e; 
+        }
+        .time-field input { 
+            border: none; 
+            background: transparent; 
+            font-size: 1rem; 
+            width: 75px; 
+            font-family: monospace; 
+            padding: 10px 0; 
+            outline: none; 
+            color: inherit; 
+        }
+        .time-field span { 
+            color: #6f8fbc; 
+            font-size: 0.9rem; 
+        }
+
+        .note-field { 
+            flex: 2; 
+            min-width: 140px; 
+        }
+        .note-field input { 
+            width: 100%; 
+            border: 1px solid #cdddec; 
+            border-radius: 40px; 
+            padding: 12px 16px; 
+            font-size: 0.95rem; 
+            background: white; 
+            color: #1a2634; 
+        }
+        body.dark .note-field input { 
+            background: #2b2b41; 
+            border-color: #49496e; 
+            color: #f0f0fa; 
+        }
+
+        .badge-hours { 
+            background: #dce8f5; 
+            padding: 8px 14px; 
+            border-radius: 40px; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        body.dark .badge-hours { 
+            background: #3f3f60; 
+        }
+
+        .action-bar { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 8px; 
+        }
+        .btn { 
+            background: white; 
+            border: none; 
+            padding: 14px 22px; 
+            border-radius: 50px; 
+            font-size: 1rem; 
+            font-weight: 500; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02); 
+            cursor: pointer; 
+            border: 1px solid #e7ecf5; 
+        }
+        body.dark .btn { 
+            background: #2f2f48; 
+            border-color: #454564; 
+            color: #e3e3f0; 
+        }
+        .btn-primary { 
+            background: #1a2c47; 
+            color: white; 
+            border: none; 
+        }
+        body.dark .btn-primary { 
+            background: #6279a7; 
+            color: #12121c; 
+        }
+        .pdf-hint { 
+            font-size: 0.8rem; 
+            opacity: 0.6; 
+        }
+        .select-weekdays-btn { 
+            background: #e0e7ff; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 30px; 
+            font-size: 0.9rem; 
+            font-weight: 500; 
+            color: #2e405b; 
+            cursor: pointer; 
+        }
+
+        /* ========== PRINT REPORT STYLES ========== */
+        .print-only { 
+            display: none; 
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1cm;
+            }
+
+            body, body.dark {
+                background: white !important;
+                color: #333 !important;
+                padding: 0 !important;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            /* Hide all screen UI */
+            .tracker-card,
+            .dark-toggle,
+            .action-bar,
+            .btn,
+            .pdf-hint,
+            .employee-controls .input-icon:not(:first-child),
+            .day-checkbox,
+            .copy-icon,
+            .select-weekdays-btn,
+            .chart-container,
+            .days-container,
+            .summary-row {
+                display: none !important;
+            }
+
+            /* Show print report */
+            .print-report {
+                display: block !important;
+                width: 100%;
+                max-width: 100%;
+                margin: 0 auto;
+                padding: 0;
+            }
+
+            /* Header Section */
+            .print-header {
+                text-align: center;
+                margin-bottom: 12px;
+                border-bottom: 3px solid #6366f1;
+                padding-bottom: 12px;
+            }
+
+            .print-header h1 {
+                color: #6366f1;
+                font-size: 26pt;
+                margin-bottom: 6px;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+            }
+
+            .print-meta {
+                color: #666;
+                font-size: 9pt;
+                font-weight: 500;
+            }
+
+            /* Info Bar - 3 columns */
+            .print-info-bar {
+                display: flex !important;
+                justify-content: space-between;
+                background: #f3f4f6;
+                padding: 10px 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border: 1px solid #e5e7eb;
+            }
+
+            .print-info-item {
+                flex: 1;
+                text-align: center;
+            }
+
+            .print-info-item:first-child { 
+                text-align: left; 
+            }
+            .print-info-item:last-child { 
+                text-align: right; 
+            }
+
+            .print-info-label {
+                font-size: 8pt;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+                font-weight: 600;
+            }
+
+            .print-info-value {
+                font-size: 11pt;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            /* Table Styles - Compact to fit 31 days */
+            .print-table-container {
+                margin-bottom: 15px;
+            }
+
+            .print-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                font-size: 9pt;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .print-table thead {
+                display: table-header-group;
+                background: #6366f1;
+            }
+
+            .print-table th {
+                background: #6366f1;
+                color: white;
+                padding: 6px 4px;
+                text-align: center;
+                font-weight: 600;
+                border: none;
+                font-size: 8pt;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+
+            .print-table th:first-child { 
+                border-radius: 8px 0 0 0; 
+            }
+            .print-table th:last-child { 
+                border-radius: 0 8px 0 0; 
+            }
+
+            .print-table td {
+                padding: 4px 4px;
+                border-bottom: 1px solid #e5e7eb;
+                border-right: 1px solid #f3f4f6;
+                text-align: center;
+                vertical-align: middle;
+                height: 18px;
+                line-height: 1;
+            }
+
+            .print-table td:last-child {
+                border-right: none;
+                text-align: left;
+                padding-left: 8px;
+            }
+
+            .print-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .print-table tbody tr:nth-child(even) {
+                background: #f9fafb;
+            }
+
+            /* Prevent page breaks inside rows */
+            .print-table tbody tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            /* Weekend styling - red text */
+            .print-table .weekend td.day-name {
+                color: #dc2626;
+                font-weight: 600;
+            }
+
+            /* Monospace for dates and times */
+            .font-mono {
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 8.5pt;
+                letter-spacing: -0.2px;
+            }
+
+            /* Summary Footer */
+            .print-summary {
+                display: flex !important;
+                justify-content: space-between;
+                background: #f3f4f6;
+                padding: 12px 20px;
+                border-radius: 8px;
+                border: 2px solid #6366f1;
+                margin-top: 15px;
+                margin-bottom: 30px;
+            }
+
+            .print-summary-item {
+                text-align: center;
+                flex: 1;
+            }
+
+            .print-summary-label {
+                font-size: 8pt;
+                color: #6b7280;
+                text-transform: uppercase;
+                margin-bottom: 2px;
+                font-weight: 600;
+            }
+
+            .print-summary-value {
+                font-size: 12pt;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            /* Signatures */
+            .print-signatures {
+                display: flex !important;
+                justify-content: space-between;
+                margin-top: 20px;
+                padding: 0 40px;
+            }
+
+            .print-signature-line {
+                width: 200px;
+                text-align: center;
+            }
+
+            .print-line {
+                border-top: 1px solid #374151;
+                margin-bottom: 6px;
+                width: 100%;
+                height: 30px;
+            }
+
+            .print-signature-label {
+                font-size: 9pt;
+                color: #4b5563;
+                font-weight: 500;
+            }
+
+            /* Utility */
+            .text-red { color: #dc2626; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SCREEN UI -->
+    <div class="tracker-card" id="trackerApp">
+        <div class="top-bar">
+            <div class="title-section">
+                <i class="fas fa-calendar-check" style="font-size: 2rem; color:#3f6ab3;"></i>
+                <h1>shiftly</h1>
+                <button class="dark-toggle" id="darkModeToggle"><i class="fas fa-moon"></i></button>
+            </div>
+            <div class="employee-controls">
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="employeeName" placeholder="Name" value="Alex Chen">
+                </div>
+                <div class="input-icon">
+                    <i class="fas fa-calendar"></i>
+                    <input type="month" id="monthPicker" value="2025-02">
+                </div>
+                <div class="input-icon">
+                    <i class="fas fa-euro-sign" id="currencyIcon"></i>
+                    <select id="currencySelect">
+                        <option value="€">EUR</option>
+                        <option value="$">USD</option>
+                    </select>
+                </div>
+                <div class="input-icon">
+                    <i class="fas fa-clock"></i>
+                    <input type="number" id="hourlyWage" value="20" step="0.5" min="0" style="width:70px;"> /h
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-row">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+                <div class="stat-content">
+                    <h3>total</h3>
+                    <div class="value" id="totalHoursDisplay">0.0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                <div class="stat-content">
+                    <h3>earnings</h3>
+                    <div class="value"><span id="currencySymbol">€</span><span id="totalEarningsDisplay">0.00</span></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-umbrella-beach"></i></div>
+                <div class="stat-content">
+                    <h3>break</h3>
+                    <div class="value">0.5h</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="hoursChart" style="width:100%; height:180px;"></canvas>
+        </div>
+
+        <div class="days-container" id="daysContainer"></div>
+
+        <div class="action-bar">
+            <div style="display: flex; gap:10px; flex-wrap: wrap; align-items: center;">
+                <button class="btn" id="pdfBtn"><i class="fas fa-file-pdf"></i> PDF (A4)</button>
+                <button class="btn" id="selectBtn"><i class="fas fa-check-double"></i> Select</button>
+                <button class="btn" id="backupBtn"><i class="fab fa-google-drive"></i> Backup</button>
+                <button class="btn" id="restoreBtn"><i class="fas fa-cloud-upload-alt"></i> Restore</button>
+            </div>
+            <span class="pdf-hint"><i class="fas fa-mobile-alt"></i> Type 1400 → 14:00</span>
+        </div>
+
+        <input type="file" id="restoreFile" accept=".json" style="display: none;">
+    </div>
+
+    <!-- PRINT REPORT -->
+    <div class="print-report print-only" id="printReport">
+        <div class="print-header">
+            <h1>Work Hours Report</h1>
+            <div class="print-meta">
+                Generated: <span id="printDate"></span> | 24h Format | 30min Break | <span id="printStandardDay">9h</span> Standard Day
+            </div>
+        </div>
+
+        <div class="print-info-bar">
+            <div class="print-info-item">
+                <div class="print-info-label">Employee</div>
+                <div class="print-info-value" id="printEmployeeName">Alex Chen</div>
+            </div>
+            <div class="print-info-item">
+                <div class="print-info-label">Month</div>
+                <div class="print-info-value" id="printMonth">Feb 2026</div>
+            </div>
+            <div class="print-info-item">
+                <div class="print-info-label">Rate</div>
+                <div class="print-info-value"><span id="printCurrency">€</span><span id="printRate">20</span>/h</div>
+            </div>
+        </div>
+
+        <div class="print-table-container">
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th>Break</th>
+                        <th>Hours</th>
+                        <th>OT (>9h)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody">
+                    <!-- Generated by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="print-summary">
+            <div class="print-summary-item">
+                <div class="print-summary-label">Total</div>
+                <div class="print-summary-value"><span id="printTotalHours">0.0</span>h</div>
+            </div>
+            <div class="print-summary-item">
+                <div class="print-summary-label">Days</div>
+                <div class="print-summary-value" id="printDaysWorked">0</div>
+            </div>
+            <div class="print-summary-item">
+                <div class="print-summary-label">Overtime</div>
+                <div class="print-summary-value"><span id="printOvertime">0.0</span>h</div>
+            </div>
+            <div class="print-summary-item">
+                <div class="print-summary-label">Pay</div>
+                <div class="print-summary-value"><span id="printPayCurrency">€</span><span id="printPay">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="print-signatures">
+            <div class="print-signature-line">
+                <div class="print-line"></div>
+                <div class="print-signature-label">Employee</div>
+            </div>
+            <div class="print-signature-line">
+                <div class="print-line"></div>
+                <div class="print-signature-label">Manager</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let currentEmployee = 'Alex Chen';
+            let currentYear = 2025;
+            let currentMonth = 1;
+            let daysData = [];
+            let chartInstance = null;
+            let selectionMode = false;
+            let selectedIndices = new Set();
+
+            const employeeInput = document.getElementById('employeeName');
+            const monthPicker = document.getElementById('monthPicker');
+            const daysContainer = document.getElementById('daysContainer');
+            const totalHoursSpan = document.getElementById('totalHoursDisplay');
+            const totalEarningsSpan = document.getElementById('totalEarningsDisplay');
+            const currencySelect = document.getElementById('currencySelect');
+            const currencyIcon = document.getElementById('currencyIcon');
+            const currencySymbolSpan = document.getElementById('currencySymbol');
+            const hourlyWageInput = document.getElementById('hourlyWage');
+            const darkToggle = document.getElementById('darkModeToggle');
+            const pdfBtn = document.getElementById('pdfBtn');
+            const selectBtn = document.getElementById('selectBtn');
+
+            // Print elements
+            const printDate = document.getElementById('printDate');
+            const printEmployeeName = document.getElementById('printEmployeeName');
+            const printMonth = document.getElementById('printMonth');
+            const printCurrency = document.getElementById('printCurrency');
+            const printRate = document.getElementById('printRate');
+            const printTableBody = document.getElementById('printTableBody');
+            const printTotalHours = document.getElementById('printTotalHours');
+            const printDaysWorked = document.getElementById('printDaysWorked');
+            const printOvertime = document.getElementById('printOvertime');
+            const printPay = document.getElementById('printPay');
+            const printPayCurrency = document.getElementById('printPayCurrency');
+
+            function formatTimeInput(input) {
+                let val = input.value.replace(/\D/g, '').slice(0,4);
+                if (val.length >= 3) {
+                    val = val.slice(0,2) + ':' + val.slice(2);
+                }
+                input.value = val;
+            }
+
+            function attachTimeFormatting(input) {
+                input.addEventListener('input', function() { formatTimeInput(this); });
+                input.addEventListener('blur', function() {
+                    let val = this.value;
+                    if (val && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
+                        this.value = '';
+                    }
+                });
+            }
+
+            function timeToMinutes(t) {
+                if (!t || !t.includes(':')) return null;
+                const [h, m] = t.split(':').map(Number);
+                if (isNaN(h) || isNaN(m) || h<0 || h>23 || m<0 || m>59) return null;
+                return h*60 + m;
+            }
+
+            function computeNetHours(inTime, outTime) {
+                const inMin = timeToMinutes(inTime);
+                const outMin = timeToMinutes(outTime);
+                if (inMin===null || outMin===null) return 0;
+                let diff = outMin - inMin;
+                if (diff < 0) diff += 24*60;
+                if (diff <= 0) return 0;
+                let net = diff - 30;
+                return net > 0 ? Math.round((net/60)*10)/10 : 0;
+            }
+
+            function generateDays(year, month) {
+                const days = [];
+                const lastDay = new Date(year, month+1, 0).getDate();
+                for (let d=1; d<=lastDay; d++) {
+                    const date = new Date(year, month, d);
+                    const weekday = date.toLocaleDateString('en-US', { weekday:'short' });
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    days.push({ dateStr, day:d, weekday, checkIn:'', checkOut:'', note:'', hours:0 });
+                }
+                return days;
+            }
+
+            function loadFromStorage() {
+                const key = `worktrack_${currentEmployee}_${currentYear}_${currentMonth}`;
+                const stored = localStorage.getItem(key);
+                return stored ? JSON.parse(stored) : null;
+            }
+
+            function saveToStorage() {
+                const key = `worktrack_${currentEmployee}_${currentYear}_${currentMonth}`;
+                const toStore = daysData.map(d => ({
+                    dateStr: d.dateStr,
+                    checkIn: d.checkIn,
+                    checkOut: d.checkOut,
+                    note: d.note
+                }));
+                localStorage.setItem(key, JSON.stringify(toStore));
+            }
+
+            function updatePrintReport() {
+                const now = new Date();
+                printDate.textContent = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                printEmployeeName.textContent = currentEmployee;
+                
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                printMonth.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+                
+                printCurrency.textContent = currencySelect.value;
+                printRate.textContent = hourlyWageInput.value;
+                printPayCurrency.textContent = currencySelect.value;
+
+                let html = '';
+                let totalHours = 0;
+                let daysWorked = 0;
+                let totalOvertime = 0;
+                const standardDay = 9;
+                const currency = currencySelect.value;
+
+                daysData.forEach((day) => {
+                    const hours = computeNetHours(day.checkIn, day.checkOut);
+                    const overtime = hours > standardDay ? hours - standardDay : 0;
+                    
+                    if (hours > 0) {
+                        totalHours += hours;
+                        daysWorked++;
+                        totalOvertime += overtime;
+                    }
+
+                    const dayLower = day.weekday.toLowerCase();
+                    const isWeekend = dayLower === 'sat' || dayLower === 'sun';
+                    const rowClass = isWeekend ? 'weekend' : '';
+                    
+                    const inTime = day.checkIn || '-';
+                    const outTime = day.checkOut || '-';
+                    const note = day.note || '-';
+                    const otDisplay = overtime > 0 ? overtime.toFixed(2) : '-';
+                    const hoursDisplay = hours > 0 ? hours.toFixed(2) : '-';
+
+                    html += `
+                        <tr class="${rowClass}">
+                            <td class="font-mono">${day.dateStr}</td>
+                            <td class="day-name">${day.weekday}</td>
+                            <td class="font-mono">${inTime}</td>
+                            <td class="font-mono">${outTime}</td>
+                            <td>30m</td>
+                            <td>${hoursDisplay}</td>
+                            <td>${otDisplay}</td>
+                            <td>${note}</td>
+                        </tr>
+                    `;
+                });
+
+                printTableBody.innerHTML = html;
+                printTotalHours.textContent = totalHours.toFixed(1);
+                printDaysWorked.textContent = daysWorked;
+                printOvertime.textContent = totalOvertime.toFixed(1);
+                
+                const wage = parseFloat(hourlyWageInput.value) || 0;
+                printPay.textContent = (totalHours * wage).toFixed(2);
+            }
+
+            function toggleSelectionMode() {
+                selectionMode = !selectionMode;
+                if (!selectionMode) selectedIndices.clear();
+                renderDays();
+                selectBtn.innerHTML = selectionMode ? '<i class="fas fa-times"></i> Done' : '<i class="fas fa-check-double"></i> Select';
+            }
+
+            function selectAllWeekdays() {
+                selectedIndices.clear();
+                daysData.forEach((day, idx) => {
+                    const weekday = day.weekday.toLowerCase();
+                    if (weekday !== 'sat' && weekday !== 'sun') selectedIndices.add(idx);
+                });
+                renderDays();
+            }
+
+            function copyToSelected(sourceIdx) {
+                if (selectedIndices.size === 0) {
+                    alert('Please select at least one target day.');
+                    return;
+                }
+                const source = daysData[sourceIdx];
+                selectedIndices.forEach(idx => {
+                    if (idx != sourceIdx) {
+                        daysData[idx].checkIn = source.checkIn;
+                        daysData[idx].checkOut = source.checkOut;
+                        daysData[idx].note = source.note;
+                    }
+                });
+                saveToStorage();
+                renderDays();
+                updateChart();
+            }
+
+            function renderDays() {
+                let html = '';
+                let totalMinutes = 0;
+
+                daysData.forEach((day, idx) => {
+                    const netH = computeNetHours(day.checkIn, day.checkOut);
+                    daysData[idx].hours = netH;
+                    totalMinutes += netH * 60;
+
+                    const checkedAttr = selectedIndices.has(idx) ? 'checked' : '';
+
+                    html += `
+                        <div class="day-card" data-index="${idx}">
+                            ${selectionMode ? `<input type="checkbox" class="day-checkbox" data-index="${idx}" ${checkedAttr}>` : ''}
+                            <div class="day-header">${day.weekday} ${day.day}</div>
+                            <div class="day-fields">
+                                <div class="time-field">
+                                    <span>⇢</span>
+                                    <input type="text" class="checkin" value="${day.checkIn || ''}" placeholder="09:00" inputmode="numeric">
+                                </div>
+                                <div class="time-field">
+                                    <span>⇠</span>
+                                    <input type="text" class="checkout" value="${day.checkOut || ''}" placeholder="18:00" inputmode="numeric">
+                                </div>
+                                <div class="note-field">
+                                    <input type="text" class="note" value="${(day.note||'').replace(/"/g,'&quot;')}" placeholder="Note">
+                                </div>
+                                <span class="badge-hours">${netH.toFixed(1)} h</span>
+                            </div>
+                            ${selectionMode ? `<span class="copy-icon" data-source="${idx}"><i class="fas fa-copy"></i></span>` : ''}
+                        </div>
+                    `;
+                });
+
+                daysContainer.innerHTML = html;
+
+                if (selectionMode) {
+                    const actionBar = document.querySelector('.action-bar div');
+                    if (actionBar && !document.querySelector('.select-weekdays-btn')) {
+                        const newBtn = document.createElement('button');
+                        newBtn.className = 'btn select-weekdays-btn';
+                        newBtn.innerHTML = '<i class="fas fa-calendar-week"></i> Select Mon-Fri';
+                        newBtn.addEventListener('click', selectAllWeekdays);
+                        actionBar.appendChild(newBtn);
+                    }
+                } else {
+                    const oldBtn = document.querySelector('.select-weekdays-btn');
+                    if (oldBtn) oldBtn.remove();
+                }
+
+                const totalHours = (totalMinutes/60).toFixed(1);
+                totalHoursSpan.innerText = totalHours;
+                const wage = parseFloat(hourlyWageInput.value) || 0;
+                const currency = currencySelect.value;
+                currencySymbolSpan.innerText = currency;
+                currencyIcon.className = currency==='€' ? 'fas fa-euro-sign' : 'fas fa-dollar-sign';
+                totalEarningsSpan.innerText = (totalMinutes/60 * wage).toFixed(2);
+
+                if (selectionMode) {
+                    document.querySelectorAll('.day-checkbox').forEach(cb => {
+                        cb.addEventListener('change', function() {
+                            const idx = parseInt(this.dataset.index);
+                            this.checked ? selectedIndices.add(idx) : selectedIndices.delete(idx);
+                        });
+                    });
+
+                    document.querySelectorAll('.copy-icon').forEach(icon => {
+                        icon.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            copyToSelected(parseInt(this.dataset.source));
+                        });
+                    });
+                }
+
+                document.querySelectorAll('.checkin').forEach(inp => {
+                    attachTimeFormatting(inp);
+                    const card = inp.closest('.day-card');
+                    const idx = card.dataset.index;
+                    inp.addEventListener('blur', function() {
+                        const val = this.value;
+                        if (val && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
+                            this.value = daysData[idx].checkIn;
+                        } else {
+                            daysData[idx].checkIn = val;
+                            daysData[idx].hours = computeNetHours(daysData[idx].checkIn, daysData[idx].checkOut);
+                            saveToStorage();
+                            renderDays();
+                            updateChart();
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.checkout').forEach(inp => {
+                    attachTimeFormatting(inp);
+                    const card = inp.closest('.day-card');
+                    const idx = card.dataset.index;
+                    inp.addEventListener('blur', function() {
+                        const val = this.value;
+                        if (val && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
+                            this.value = daysData[idx].checkOut;
+                        } else {
+                            daysData[idx].checkOut = val;
+                            daysData[idx].hours = computeNetHours(daysData[idx].checkIn, daysData[idx].checkOut);
+                            saveToStorage();
+                            renderDays();
+                            updateChart();
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.note').forEach(inp => {
+                    const card = inp.closest('.day-card');
+                    const idx = card.dataset.index;
+                    inp.addEventListener('blur', function() {
+                        daysData[idx].note = this.value;
+                        saveToStorage();
+                    });
+                });
+
+                updateChart();
+                updatePrintReport();
+            }
+
+            function updateChart() {
+                const labels = daysData.map(d => d.day);
+                const values = daysData.map(d => d.hours);
+                if (chartInstance) chartInstance.destroy();
+                const ctx = document.getElementById('hoursChart').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'net hours',
+                            data: values,
+                            backgroundColor: '#5f8fd9',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            function initFromPicker() {
+                const [year, month] = monthPicker.value.split('-').map(Number);
+                currentYear = year;
+                currentMonth = month - 1;
+                currentEmployee = employeeInput.value.trim() || 'Employee';
+                daysData = generateDays(currentYear, currentMonth);
+                const stored = loadFromStorage();
+                if (stored) {
+                    stored.forEach(s => {
+                        const found = daysData.find(d => d.dateStr === s.dateStr);
+                        if (found) {
+                            found.checkIn = s.checkIn || '';
+                            found.checkOut = s.checkOut || '';
+                            found.note = s.note || '';
+                        }
+                    });
+                }
+                if (selectionMode) toggleSelectionMode();
+                renderDays();
+            }
+
+            darkToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                const icon = darkToggle.querySelector('i');
+                icon.classList.toggle('fa-moon');
+                icon.classList.toggle('fa-sun');
+            });
+
+            employeeInput.addEventListener('change', initFromPicker);
+            monthPicker.addEventListener('change', initFromPicker);
+            currencySelect.addEventListener('change', () => renderDays());
+            hourlyWageInput.addEventListener('input', () => renderDays());
+
+            pdfBtn.addEventListener('click', () => {
+                updatePrintReport();
+                window.print();
+            });
+
+            selectBtn.addEventListener('click', toggleSelectionMode);
+
+            document.getElementById('backupBtn').addEventListener('click', () => {
+                const backup = {
+                    employee: currentEmployee,
+                    year: currentYear,
+                    month: currentMonth,
+                    days: daysData.map(d => ({ dateStr: d.dateStr, checkIn: d.checkIn, checkOut: d.checkOut, note: d.note })),
+                    wage: hourlyWageInput.value,
+                    currency: currencySelect.value
+                };
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `shiftly_backup_${currentEmployee}_${currentYear}_${currentMonth+1}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            document.getElementById('restoreBtn').addEventListener('click', () => {
+                document.getElementById('restoreFile').click();
+            });
+
+            document.getElementById('restoreFile').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (data.employee && data.days) {
+                            currentEmployee = data.employee;
+                            employeeInput.value = currentEmployee;
+                            if (data.year && data.month !== undefined) {
+                                currentYear = data.year;
+                                currentMonth = data.month;
+                                monthPicker.value = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+                            }
+                            daysData = generateDays(currentYear, currentMonth);
+                            data.days.forEach(r => {
+                                const f = daysData.find(d => d.dateStr === r.dateStr);
+                                if (f) {
+                                    f.checkIn = r.checkIn || '';
+                                    f.checkOut = r.checkOut || '';
+                                    f.note = r.note || '';
+                                }
+                            });
+                            if (data.wage) hourlyWageInput.value = data.wage;
+                            if (data.currency) currencySelect.value = data.currency;
+                            saveToStorage();
+                            renderDays();
+                        }
+                    } catch (err) { alert('Invalid backup'); }
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
+            });
+
+            monthPicker.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            initFromPicker();
+        })();
+    </script>
+</body>
+</html>
